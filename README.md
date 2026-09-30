@@ -1,5 +1,9 @@
 # 📊 Dashboard de Ventas Retail
 
+## Sobre el proyecto
+
+Pipeline ETL y dashboard interactivo construido con Python para analizar 4 años de ventas retail (9.993 registros). Permite explorar KPIs de ventas, profit y márgenes por categoría, región y período de tiempo, con filtros dinámicos en tiempo real. Desarrollado como proyecto de portfolio para demostrar habilidades en análisis de datos, transformación ETL y visualización interactiva.
+
 Proyecto de análisis de datos de punta a punta sobre el dataset **Sample - Superstore**: un pipeline ETL que limpia y normaliza los datos, una base SQLite y un dashboard interactivo para explorar ventas, rentabilidad y desempeño geográfico.
 
 ## Stack técnico
