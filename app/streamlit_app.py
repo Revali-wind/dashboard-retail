@@ -1,5 +1,6 @@
 """Dashboard de ventas retail. Ejecutar: streamlit run app/streamlit_app.py"""
 import sqlite3
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -7,7 +8,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-DB_PATH = Path(__file__).resolve().parents[1] / "db" / "retail.db"
+# Permite importar `src` al ejecutar con `streamlit run app/streamlit_app.py`
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from src.etl.config import DB_PATH, RAW_CSV  # noqa: E402
+from src.etl.pipeline import run as run_etl  # noqa: E402
 
 # Paleta categórica fija: cada medida conserva su color en todos los gráficos
 C_SALES, C_PROFIT = "#2a78d6", "#eb6834"
@@ -40,6 +45,20 @@ JOIN regiones  r USING (region_id)
 st.set_page_config(page_title="Dashboard Retail", page_icon="📊", layout="wide")
 
 
+@st.cache_resource(show_spinner="Generando la base de datos (primer arranque)…")
+def ensure_db() -> None:
+    """Si retail.db no existe (p. ej. en Streamlit Cloud), ejecuta el ETL para crearla."""
+    if DB_PATH.exists():
+        return
+    if not RAW_CSV.exists():
+        raise FileNotFoundError(f"No se encontró el CSV de origen: {RAW_CSV}")
+    try:
+        run_etl()
+    except Exception:
+        DB_PATH.unlink(missing_ok=True)  # evita dejar una base a medias
+        raise
+
+
 @st.cache_data(show_spinner="Cargando datos…")
 def load_data() -> pd.DataFrame:
     with sqlite3.connect(DB_PATH) as conn:
@@ -57,8 +76,10 @@ def style(fig: go.Figure, height: int = 360) -> go.Figure:
     return fig
 
 
-if not DB_PATH.exists():
-    st.error(f"No existe {DB_PATH.name}. Ejecuta primero: `python -m src.etl.pipeline`")
+try:
+    ensure_db()
+except Exception as exc:
+    st.error(f"No se pudo generar {DB_PATH.name} con el ETL: {exc}")
     st.stop()
 
 data = load_data()
